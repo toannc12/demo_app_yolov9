@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Damage Detection</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+        }
+        .tab {
+            padding: 10px 20px;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 0 5px 5px 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .upload-container {
+            border: 2px dashed #3498db;
+            padding: 30px;
+            text-align: center;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .upload-container:hover, .upload-container.dragover {
+            background-color: #e3f2fd;
+            border-color: #2980b9;
+        }
+        .upload-container p {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: #555;
+        }
+        .file-input {
+            display: none;
+        }
+        .upload-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .upload-btn:hover {
+            background-color: #2980b9;
+        }
+        .result-container {
+            display: flex;
+            flex-direction: column;
+            margin-top: 30px;
+        }
+        .result-heading {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .result-images {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 20px;
+        }
+        .result-box {
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .result-box h3 {
+            text-align: center;
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        img, video {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            display: block;
+            margin: 0 auto;
+        }
+        .legend {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+        }
+        .legend h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Road Damage Detection using YOLOv9</h1>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="image">Image Detection</div>
+        <div class="tab" data-tab="video">Video Detection</div>
+        <div class="tab" data-tab="live">Live Detection</div>
+    </div>
+
+    <div class="tab-content active" id="image-tab">
+        <h2>Image Road Damage Detection</h2>
+        <form id="uploadForm" action="/imgpred" method="post" enctype="multipart/form-data">
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit" class="upload-btn">Detect Road Damage</button>
+        </form>
+        {% if result_image_path %}
+        <div class="result-container">
+            <h2 class="result-heading">Detection Results</h2>
+            <div class="result-images">
+                <div class="result-box">
+                    <img src="{{ result_image_path }}" alt="Detection Result">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="tab-content" id="video-tab">
+        <h2>Video Road Damage Detection</h2>
+        <form id="uploadForm1" action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="video/*" required>
+            <button type="submit" class="upload-btn">Detect Road Damage</button>
+        </form>
+
+        {% if filename %}
+        <div class="result-container">
+            <h2 class="result-heading">Detection Results</h2>
+            <div class="result-images">
+                <div class="result-box">
+                     <img src="{{ url_for('video_feed', filename=filename) }}">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>   
+
+    <div class="tab-content" id="live-tab">
+        <h2>Live Road Damage Detection</h2>
+        <a id="startWebcam" href="/webcam_feed" class="upload-btn">Start Webcam Detection</a>       
+    </div>
+
+    <div class="legend">
+        <h3>Road Damage Types Legend</h3>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(0, 51, 235);"></div>
+            <span>D00: Longitudinal cracks</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(21, 212, 241);"></div>
+            <span>D10: Transverse cracks</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(234, 233, 238);"></div>
+            <span>D20: Alligator cracks</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(12, 222, 190);"></div>
+            <span>D30: Repaired cracks</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(19, 29, 108);"></div>
+            <span>D40: Potholes</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(244, 114, 221);"></div>
+            <span>D50: Pedestrian crossing blurs</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(255, 64, 79);"></div>
+            <span>D60: Lane line blurs</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(204, 237, 2);"></div>
+            <span>D70: Manhole covers</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: rgb(0, 251, 54);"></div>
+            <span>D80: Patchy road sections</span>
+        </div>
+    </div>       
+
+    <script>
+        // Tab functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and tab contents
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // Show corresponding tab content
+                const tabId = tab.getAttribute('data-tab') + '-tab';
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+    </script>
+
+</body>
+</html>
